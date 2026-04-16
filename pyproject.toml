@@ -1,0 +1,9 @@
+[project]
+name = "finance-core-mcp"
+version = "0.1.0"
+description = "Finance MCP server for budgets, goals, transactions, and summaries"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
