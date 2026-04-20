@@ -6,15 +6,15 @@ class GoalRepository:
         sql = text(
             """
               SELECT
-                g.id AS goal_id,
-                g.workspace_id,
-                g.account_id,
+                g.id::text AS goal_id,
+                g.workspace_id::text AS workspace_id,
+                g.account_id::text AS account_id,
                 g.name,
                 g.target_amount_cents,
                 g.current_amount_cents,
-                g.target_date,
+                g.target_date::text AS target_date,
                 g.status,
-                g.currency,
+                g.currency
                 
               FROM goals g           
               WHERE g.id = :goal_id AND g.workspace_id = :workspace_id AND g.deleted_at IS NULL

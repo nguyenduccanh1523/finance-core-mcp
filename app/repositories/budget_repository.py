@@ -7,11 +7,11 @@ class BudgetRepository:
         sql = text(
             """
               SELECT
-                b.id AS budget_id,
-                b.workspace_id,
-                b.account_id,
-                b.period_month,
-                b.category_id,
+                b.id::text AS budget_id,
+                b.workspace_id::text AS workspace_id,
+                b.account_id::text AS account_id,
+                b.period_month::text AS period_month,
+                b.category_id::text AS category_id,
                 b.amount_limit_cents,
                 b.alert_threshold_percent,
                 b.currency,
@@ -19,7 +19,7 @@ class BudgetRepository:
                 COALESCE(SUM(CASE
                 WHEN t.type = 'EXPENSE' THEN ABS(t.amount_cents)
                 ELSE 0
-                END), 0) AS spent_amount_cents,
+                END), 0) AS spent_amount_cents
                 
               FROM budgets b
               LEFT JOIN budget_transactions bt ON bt.budget_id = b.id

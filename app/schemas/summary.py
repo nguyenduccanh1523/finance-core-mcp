@@ -13,8 +13,8 @@ class TopCategoryItem(BaseModel):
 
 class MonthlySummaryOutput(BaseModel):
     month: str
-    income_total: float
-    expense_total: float
+    income_total_cents: int
+    expense_total_cents: int
     transaction_count: int
     net_cashflow_cents: int
     top_categories: list[TopCategoryItem]

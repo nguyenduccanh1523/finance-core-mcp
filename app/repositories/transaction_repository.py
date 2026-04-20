@@ -9,15 +9,15 @@ class TransactionRepository:
         sql = text(
             """
               SELECT
-                t.id AS transaction_id,
-                t.account_id,
-                t.category_id,
-                t.amount_cents,
-                t.type,
-                t.currency,
-                t.occurred_at,
-                t.note,
-                t.counterparty
+                t.id::text AS transaction_id,
+                t.account_id::text AS account_id,
+                t.category_id::text AS category_id,
+                t.amount_cents::bigint AS amount_cents,
+                t.type::text AS type,
+                t.currency::text AS currency,
+                t.occurred_at::text AS occurred_at,
+                t.note::text AS note,
+                t.counterparty::text AS counterparty
                 
               FROM transactions t           
               WHERE t.workspace_id = :workspace_id AND t.deleted_at IS NULL AND t.occurred_at >= NOW() - (:window_days || ' days')::interval
