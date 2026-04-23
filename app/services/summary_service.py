@@ -5,7 +5,7 @@ class SummaryService:
     def __init__(self) -> None:
         self.repo = SummaryRepository()
 
-    def get_monthly_summary(self, workspace_id: str, month: int) -> dict | None:
+    def get_monthly_summary(self, workspace_id: str, month: str) -> dict | None:
         data = self.repo.get_monthly_summary(workspace_id, month)
 
         normalized_summaries = []

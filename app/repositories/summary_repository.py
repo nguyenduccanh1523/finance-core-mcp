@@ -7,7 +7,7 @@ class SummaryRepository:
         summary_sql = text(
             """
             SELECT
-                :currency AS currency,
+                currency,
                 COALESCE(SUM(CASE WHEN type = 'INCOME' THEN amount_cents ELSE 0 END), 0)::bigint AS income_total_cents,
                 COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN ABS(amount_cents) ELSE 0 END), 0)::bigint AS expense_total_cents,
                 COUNT(*)::int AS transaction_count
@@ -23,7 +23,7 @@ class SummaryRepository:
         top_categories_sql = text(
             """
             SELECT
-                :currency AS currency,
+                currency,
                 category_id::text AS category_id,
                 COALESCE(SUM(ABS(amount_cents)), 0)::bigint AS amount_cents
             FROM transactions
@@ -38,13 +38,13 @@ class SummaryRepository:
         )
 
         with SessionLocal() as session:
-            summary_row = (
+            summary_rows = (
                 session.execute(
                     summary_sql,
                     {"workspace_id": workspace_id, "month": month},
                 )
                 .mappings()
-                .first()
+                .all()
             )
 
             top_categories_rows = (
@@ -72,7 +72,7 @@ class SummaryRepository:
                 )
 
         summaries = []
-        for row in summary_row:
+        for row in summary_rows:
             currency = row["currency"]
             income_total_cents = int(row["income_total_cents"] or 0)
             expense_total_cents = int(row["expense_total_cents"] or 0)
