@@ -36,19 +36,83 @@ def build_finance_tool_services() -> FinanceToolServices:
 
 
 def _validate_and_dump(
-    output_model: type[BaseModel], result: dict[str, Any]
+    output_model: type[BaseModel], result: dict[str, Any] | BaseModel | None
 ) -> dict[str, Any]:
+    if result is None:
+        raise ValueError(
+            f"{output_model.__name__} received None. "
+            "Tool handler must return a valid dictionary."
+        )
+    if isinstance(result, BaseModel):
+        result = result.model_dump()
     return output_model.model_validate(result).model_dump()
 
 
+def _normalize_search_transactions_result(result: Any) -> dict[str, Any]:
+    if result is None:
+        return {
+            "count": 0,
+            "items": [],
+        }
+
+    if isinstance(result, BaseModel):
+        result = result.model_dump()
+
+    if isinstance(result, list):
+        return {
+            "count": len(result),
+            "items": result,
+        }
+
+    if isinstance(result, dict):
+        items = result.get("items")
+
+        if items is None:
+            items = result.get("transactions")
+
+        if items is None:
+            items = []
+
+        count = result.get("count")
+
+        if count is None:
+            count = result.get("total")
+
+        if count is None:
+            count = len(items)
+
+        return {
+            "count": int(count),
+            "items": items,
+        }
+
+    raise ValueError(
+        f"Invalid search_transactions result type: {type(result).__name__}"
+    )
+
+
 def _run_tool(
-    tool_name: str, output_model: type[BaseModel], handler: Callable[[], dict[str, Any]]
+    tool_name: str,
+    output_model: type[BaseModel],
+    handler: Callable[[], dict[str, Any] | BaseModel | None],
 ) -> dict[str, Any]:
     logger.info("MCP tool called: %s", tool_name)
 
     try:
         result = handler()
+
+        if result is None and output_model is SearchTransactionsOutput:
+            logger.warning(
+                "MCP tool %s returned None. Fallback to empty transactions output.",
+                tool_name,
+            )
+            result = {
+                "count": 0,
+                "items": [],
+            }
+
         payload = _validate_and_dump(output_model, result)
+
         logger.info("MCP tool %s executed successfully", tool_name)
         return payload
 
@@ -92,14 +156,39 @@ def register_finance_tools(
 
     @mcp.tool
     def search_transactions(input: SearchTransactionsInput) -> dict[str, Any]:
-        return _run_tool(
-            tool_name="search_transactions",
-            output_model=SearchTransactionsOutput,
-            handler=lambda: services.transaction.search(
+        logger.info(
+            "search_transactions input workspace_id=%s window_days=%s limit=%s",
+            input.workspace_id,
+            input.window_days,
+            input.limit,
+        )
+
+        def handler() -> dict[str, Any]:
+            raw_result = services.transaction.search(
                 workspace_id=input.workspace_id,
                 window_days=input.window_days,
                 limit=input.limit,
-            ),
+            )
+
+            logger.info(
+                "search_transactions raw_result type=%s value=%s",
+                type(raw_result).__name__,
+                raw_result,
+            )
+
+            normalized_result = _normalize_search_transactions_result(raw_result)
+
+            logger.info(
+                "search_transactions normalized_result=%s",
+                normalized_result,
+            )
+
+            return normalized_result
+
+        return _run_tool(
+            tool_name="search_transactions",
+            output_model=SearchTransactionsOutput,
+            handler=handler,
         )
 
     @mcp.tool
